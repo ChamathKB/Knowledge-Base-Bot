@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-openai.set_api_key(os.getenv("OPENAI_API_KEY"))
+os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 
 llm = ChatOpenAI(temperature=1.0, model='gpt-3.5-turbo-0613')
 
