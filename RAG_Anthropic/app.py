@@ -1,9 +1,10 @@
-from anthropic import Anthropic, HUMAN_PROMPT, AI_PROMPT
-
+from langchain_anthropic import ChatAnthropic
 from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.document_loaders import DirectoryLoader
 from langchain.vectorstores import FAISS
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
 
 import streamlit as st
 import pickle
@@ -18,19 +19,18 @@ st.set_page_config(layout = "wide")
 DOCS_DIR = os.path.abspath("./uploaded_docs")
 
 
-anthropic = Anthropic(api_key=API_KEY)
+anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
+
+# chat completion llm
+llm = ChatAnthropic(
+    anthropic_api_key=anthropic_api_key,
+    model_name="claude-3-opus-20240229",  # change "opus" -> "sonnet" for speed
+    temperature=0.0
+)
+
 document_embedder = NVIDIAEmbeddings(model="nvolveqa_40k", model_type="passage")
+
 query_embedder = NVIDIAEmbeddings(model="nvolveqa_40k", model_type="query")
-
-
-def chat(user_input):
-    stream = anthropic.completions.create(
-	model="claude-2.1",
-	max_tokens_to_sample=350,
-	prompt=f"{HUMAN_PROMPT} {user_input} {AI_PROMPT}",
-	stream=True,
-	)
-    return stream
 
 
 def document_loader(DOCS_DIR):
@@ -82,3 +82,48 @@ else:
             st.success("Vector store created and saved.")
         else:
             st.warning("No documents available to process!", icon="⚠️")
+
+
+document_loader(DOCS_DIR)
+
+st.subheader("Chat with your AI Assistant, Envie!")
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+prompt_template = ChatPromptTemplate.from_messages(
+    [("system", """You are a helpful AI assistant named Envie. You will reply to questions only based on the context that you are provided. 
+      If something is out of context, you will refrain from replying and politely decline to respond to the user."""), 
+     ("user", "{input}")]
+)
+
+user_input = st.chat_input("Can you tell me what NVIDIA is known for?")
+
+chain = prompt_template | llm | StrOutputParser()
+
+if user_input and vectorstore!=None:
+    st.session_state.messages.append({"role": "user", "content": user_input})
+    retriever = vectorstore.as_retriever()
+    docs = retriever.get_relevant_documents(user_input)
+    with st.chat_message("user"):
+        st.markdown(user_input)
+
+    context = ""
+    for doc in docs:
+        context += doc.page_content + "\n\n"
+
+    augmented_user_input = "Context: " + context + "\n\nQuestion: " + user_input + "\n"
+
+    with st.chat_message("assistant"):
+        message_placeholder = st.empty()
+        full_response = ""
+
+        for response in chain.stream({"input": augmented_user_input}):
+            full_response += response
+            message_placeholder.markdown(full_response + "▌")
+        message_placeholder.markdown(full_response)
+    st.session_state.messages.append({"role": "assistant", "content": full_response})
