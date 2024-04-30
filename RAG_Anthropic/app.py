@@ -11,15 +11,14 @@ import pickle
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
 
-API_KEY = os.getenv('API_KEY')
+API_KEY = os.environ.get('API_KEY')
 
 st.set_page_config(layout = "wide")
 DOCS_DIR = os.path.abspath("./uploaded_docs")
 
 
-anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
+anthropic_api_key = os.environ.get("ANTHROPIC_API_KEY")
 
 # chat completion llm
 llm = ChatAnthropic(
