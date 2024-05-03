@@ -8,17 +8,19 @@ from langchain_core.prompts import ChatPromptTemplate
 
 import streamlit as st
 import pickle
+import getpass
 import os
-from dotenv import load_dotenv
 
 
-API_KEY = os.environ.get('API_KEY')
+anthropic_api_key = os.environ.get("ANTHROPIC_API_KEY")
+if not os.environ.get("NVIDIA_API_KEY", "").startswith("nvapi-"):
+    nvapi_key = getpass.getpass("Enter your NVIDIA API key: ")
+    assert nvapi_key.startswith("nvapi-"), f"{nvapi_key[:5]}... is not a valid key"
+    os.environ["NVIDIA_API_KEY"] = nvapi_key
 
 st.set_page_config(layout = "wide")
 DOCS_DIR = os.path.abspath("./uploaded_docs")
 
-
-anthropic_api_key = os.environ.get("ANTHROPIC_API_KEY")
 
 # chat completion llm
 llm = ChatAnthropic(
