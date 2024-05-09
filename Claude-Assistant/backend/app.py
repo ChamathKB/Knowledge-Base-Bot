@@ -24,6 +24,7 @@ app = Flask(__name__)
 def hello_world():
     return "welcome"
 
+@app.route('/ask', methods=['POST'])
 def ask_assistant():
     data = request.get_json()
     if not data:
@@ -62,3 +63,6 @@ def ask_assistant():
 
     print(result)
     return jsonify({"status": "success", "message": result})
+    
+if __name__ == '__main__':
+    app.run()
