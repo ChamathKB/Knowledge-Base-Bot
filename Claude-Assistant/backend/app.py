@@ -64,5 +64,11 @@ def ask_assistant():
     print(result)
     return jsonify({"status": "success", "message": result})
     
+def create_app() -> flask.app.Flask:
+    """
+    Run flask app for WSGI deployment
+    """
+    return app
+        
 if __name__ == '__main__':
     app.run()
