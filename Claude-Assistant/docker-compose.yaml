@@ -1,0 +1,10 @@
+services:
+  claude_assistant:
+    build: .
+    container_name: claude_assistant
+    ports:
+      - "8000:8000"
+    volumes:
+    - .:/app/
+    env_file:
+    - .env
