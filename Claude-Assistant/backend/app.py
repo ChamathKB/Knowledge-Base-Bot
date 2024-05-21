@@ -16,13 +16,16 @@ from langchain.prompts.chat import (
 from dotenv import load_dotenv
 import os
 
+
 load_dotenv()
 
 app = Flask(__name__)
 
+
 @app.route('/')
 def hello_world():
     return "welcome"
+
 
 @app.route('/ask', methods=['POST'])
 def ask_assistant():
@@ -64,11 +67,61 @@ def ask_assistant():
     print(result)
     return jsonify({"status": "success", "message": result})
     
+
+@app.route('/search', methods=['POST'])
+def search_with_assistant():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    messages = data.get("message")
+
+    llm = ChatAnthropic()
+
+
+    # Get the last message with 'user' role
+    user_messages = [msg for msg in messages if msg['role'] == 'user']
+    last_user_message = user_messages[-1] if user_messages else None
+
+    # If there is no user message, return an error response
+    if not last_user_message:
+        return jsonify({"error": "No user message found"}), 400
+
+    input = last_user_message['content']
+
+    search = SerpAPIWrapper()
+    tools = [
+        Tool(
+            name = "Current Search",
+            func=search.run,
+            description="useful for when you need to answer questions about current events or the current state of the world"
+        ),
+    ]
+    chat_history = MessagesPlaceholder(variable_name="chat_history")
+    memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+    agent_chain = initialize_agent(
+        tools, 
+        llm, 
+        agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION, 
+        verbose=True, 
+        memory=memory, 
+        agent_kwargs = {
+            "memory_prompts": [chat_history],
+            "input_variables": ["input", "agent_scratchpad", "chat_history"]
+        }
+    )
+    result = agent_chain.run(input=input)
+
+    print(result)
+    return jsonify({"status": "success", "message": result})
+
+
 def create_app() -> flask.app.Flask:
     """
     Run flask app for WSGI deployment
     """
     return app
+
         
 if __name__ == '__main__':
     app.run()
