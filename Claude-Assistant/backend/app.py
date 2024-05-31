@@ -78,12 +78,9 @@ def search_with_assistant():
 
     llm = ChatAnthropic()
 
-
-    # Get the last message with 'user' role
     user_messages = [msg for msg in messages if msg['role'] == 'user']
     last_user_message = user_messages[-1] if user_messages else None
 
-    # If there is no user message, return an error response
     if not last_user_message:
         return jsonify({"error": "No user message found"}), 400
 
@@ -116,7 +113,7 @@ def search_with_assistant():
     return jsonify({"status": "success", "message": result})
 
 
-def create_app() -> flask.app.Flask:
+def create_app():
     """
     Run flask app for WSGI deployment
     """
